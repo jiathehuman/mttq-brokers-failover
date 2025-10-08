@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  mosquitto-primary:
+    image: eclipse-mosquitto:2.0
+    container_name: mosquitto-primary
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./config/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - shared-data:/mosquitto/data
+      - ./log:/mosquitto/log
+    networks:
+      - mqtt-network
+    restart: unless-stopped
+
+volumes:
+  shared-data:
+    external: true
+    name: mqtt-shared-data
+
+networks:
+  mqtt-network:
+    external: true
+    name: mqtt-bridge-network
