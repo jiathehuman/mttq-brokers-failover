@@ -1,59 +1,21 @@
-# Test MTTQ
-┌─────────────────┐     ┌─────────────────┐
-│   MQTT Client   │────▶│  Load Balancer  │
-│                 │     │   (nginx:8883)  │
-└─────────────────┘     └─────────┬───────┘
-                                  │
-                    ┌─────────────┼─────────────┐
-                    ▼             ▼             ▼
-            ┌──────────────┐ ┌──────────────┐ ┌──────────────┐
-            │    Parent    │ │   Child 1    │ │   Child 2    │
-            │   Broker     │ │   Broker     │ │   Broker     │
-            │ (Primary)    │ │  (Backup)    │ │  (Backup)    │
-            └──────┬───────┘ └──────┬───────┘ └──────┬───────┘
-                   │                │                │
-                   └────────────────┼────────────────┘
-                                    │
-                            ┌───────▼───────┐
-                            │ Health Checker │
-                            │  (MQTT Ping)   │
-                            └───────────────┘
+docker exec -it mqtt_client mosquitto_pub -h nginx_lb -p 1883 -t sensors/temp -m "23.4°C" -q 1
+docker exec -it mqtt_client mosquitto_sub -h nginx_lb -p 1883 -t sensors/# -q 1
 
-## Creating volumes and shared data
 
-`/usr/local/bin/docker network create mqtt-bridge-network`
+docker exec -it mqtt_client mosquitto_sub -h nginx_lb -p 1883 -t sensors/#
 
-`/usr/local/bin/docker volume create mqtt-shared-data`
+docker exec -it mqtt_client mosquitto_pub -h nginx_lb -p 1883 -t sensors/temp -m "23.4°C"
 
-## Check Logs
 
-`/usr/local/bin/docker logs mosquitto-parent`
+clear retained docker exec -it mqtt_client mosquitto_pub -h nginx_lb -p 1883 -t sensors/temp -r -n
+Nginx achieves connection failover: Clients can reconnect to another broker if one fails
 
-## Test
 
-```
-# Test publishing to parent broker
-/usr/local/bin/docker exec -it mosquitto-parent mosquitto_pub -h localhost -t test/topic -m "Hello from parent"
+By default, mosquitto_pub does not set the retained flag, but some broker configurations (or HiveMQ defaults) may retain the last message for a topic.
 
-# Test subscribing from child1
-/usr/local/bin/docker exec -it mosquitto-child1 mosquitto_sub -h localhost -t test/topic
+if you subscribe
+docker exec -it mqtt_client mosquitto_sub -h nginx_lb -p 1883 -t sensors/#
 
-# Test subscribing from child2
-/usr/local/bin/docker exec -it mosquitto-child2 mosquitto_sub -h localhost -t test/topic
-```
+The broker sends the retained message immediately upon subscription.
 
-Parent - bridge all topics to and from children, no loops
-child 1 and 2 (redunduncy) - bridges all topics between each other, bridge all topics to/from parent and operates if parent fails
-
-Message Flow
-Normal Operation:
-
-Client → Parent → Distributed to Child1 & Child2
-Child1 Local → Parent → Child2 receives copy
-Child2 Local → Parent → Child1 receives copy
-Parent Fails:
-
-Child1 & Child2 continue operating independently
-They have complete message history up to failure point
-Clients switch connection to Child1 or Child2
-
+The "infinite" messages are not truly infinite — they are the broker sending the last retained message repeatedly to new subscriptions.

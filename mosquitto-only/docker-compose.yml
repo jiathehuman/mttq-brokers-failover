@@ -1,0 +1,50 @@
+version: "3.9"
+services:
+  nginx:
+    image: nginx:latest
+    container_name: nginx_lb
+    ports:
+      - "1883:1883"
+      - "8083:8083"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - broker1
+      - broker2
+      - broker3
+    networks:
+      - mqtt_net
+
+  broker1:
+    image: eclipse-mosquitto:2
+    container_name: broker1
+    volumes:
+      - ./broker1.conf:/mosquitto/config/mosquitto.conf
+    networks:
+      - mqtt_net
+
+  broker2:
+    image: eclipse-mosquitto:2
+    container_name: broker2
+    volumes:
+      - ./broker2.conf:/mosquitto/config/mosquitto.conf
+    networks:
+      - mqtt_net
+
+  broker3:
+    image: eclipse-mosquitto:2
+    container_name: broker3
+    volumes:
+      - ./broker3.conf:/mosquitto/config/mosquitto.conf
+    networks:
+      - mqtt_net
+
+  client:
+    image: eclipse-mosquitto:2
+    container_name: mqtt_client
+    command: tail -f /dev/null
+    networks:
+      - mqtt_net
+
+networks:
+  mqtt_net:
