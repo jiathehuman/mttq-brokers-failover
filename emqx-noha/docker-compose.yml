@@ -1,0 +1,88 @@
+version: '3.8'
+
+services:
+  emqx1:
+    image: emqx/emqx:5.6.0
+    container_name: emqx1-noha
+    hostname: emqx1-noha
+    environment:
+      - EMQX_NAME=emqx1
+      - EMQX_NODE__COOKIE=emqxsecret
+      - EMQX_CLUSTER__DISCOVERY=static
+      - EMQX_CLUSTER__STATIC__SEEDS=emqx1@emqx1-noha,emqx2@emqx2-noha,emqx3@emqx3-noha
+      - EMQX_LISTENER__TCP__EXTERNAL=1883
+    networks:
+      - broker-net
+
+  emqx2:
+    image: emqx/emqx:5.6.0
+    container_name: emqx2-noha
+    hostname: emqx2-noha
+    environment:
+      - EMQX_NAME=emqx2
+      - EMQX_NODE__COOKIE=emqxsecret
+      - EMQX_CLUSTER__DISCOVERY=static
+      - EMQX_CLUSTER__STATIC__SEEDS=emqx1@emqx1-noha,emqx2@emqx2-noha,emqx3@emqx3-noha
+      - EMQX_LISTENER__TCP__EXTERNAL=1883
+    networks:
+      - broker-net
+
+  emqx3:
+    image: emqx/emqx:5.6.0
+    container_name: emqx3-noha
+    hostname: emqx3-noha
+    environment:
+      - EMQX_NAME=emqx3
+      - EMQX_NODE__COOKIE=emqxsecret
+      - EMQX_CLUSTER__DISCOVERY=static
+      - EMQX_CLUSTER__STATIC__SEEDS=emqx1@emqx1-noha,emqx2@emqx2-noha,emqx3@emqx3-noha
+      - EMQX_LISTENER__TCP__EXTERNAL=1883
+    networks:
+      - broker-net
+
+  emqx4:
+    image: emqx/emqx:5.6.0
+    container_name: emqx4-noha
+    hostname: emqx4-noha
+    environment:
+      - EMQX_NAME=emqx4
+      - EMQX_LISTENER__TCP__EXTERNAL=1883
+    ports:
+      - "1883:1883"
+    networks:
+      - broker-net
+      - client-net
+
+  emqx-child1:
+    image: emqx/emqx:5.6.0
+    container_name: emqx-child1-noha
+    hostname: emqx-child1-noha
+    environment:
+      - EMQX_NAME=emqxchild1
+      - EMQX_LISTENER__TCP__EXTERNAL=1883
+    networks:
+      - broker-net
+
+  emqx-child2:
+    image: emqx/emqx:5.6.0
+    container_name: emqx-child2-noha
+    hostname: emqx-child2-noha
+    environment:
+      - EMQX_NAME=emqxchild2
+      - EMQX_LISTENER__TCP__EXTERNAL=1883
+    networks:
+      - broker-net
+
+  mosquitto-client:
+    image: eclipse-mosquitto:2.0
+    container_name: mosquitto-client-noha
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+    networks:
+      - client-net
+
+networks:
+  broker-net:
+    driver: bridge
+  client-net:
+    driver: bridge

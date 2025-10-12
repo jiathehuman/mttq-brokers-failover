@@ -4,8 +4,15 @@ docker exec -u 0 -it emqx3 /bin/sh
 docker exec -u 0 -it emqx4 /bin/sh
 docker exec -u 0 -it emqx5 /bin/sh
 
+
+mosquitto_sub -h localhost -p 1883 -t test/proxy -v -u admin -P public
+docker exec -it emqx1 mosquitto_pub -h emqx-haproxy -p 1883 -t test/proxy -m "hello from emqx1" -u admin -P public
+
+
+docker exec -u 0 -it emqx1 sh -c "apt-get update && apt-get install -y mosquitto-clients"
+
 apt-get update && apt-get install -y mosquitto-clients
-mosquitto_sub -h emqx-haproxy -p 1883 -t test/proxy -v
+mosquitto_sub -h emqx-haproxy -p 1883 -t test/a -v
 
 apt-get update && apt-get install -y iputils-ping
 ping emqx2
