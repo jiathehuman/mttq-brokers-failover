@@ -1,7 +1,0 @@
-# Test
-
-## Subscribe
-mosquitto_sub -h localhost -p 1883 -t sensors/#
-
-## Publish
-mosquitto_pub -h localhost -p 1883 -t sensors/temp -m "24°C"

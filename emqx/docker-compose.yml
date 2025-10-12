@@ -1,0 +1,133 @@
+services:
+  emqx1:
+    # uses EMQX MQTT
+    image: emqx/emqx:5.6.0
+    container_name: emqx1
+    hostname: emqx1
+    environment:
+      # emqx node name is emqx1
+      - EMQX_NAME=emqx1
+      # shared secret for clustering as all nodes must match
+      - EMQX_NODE__COOKIE=emqxsecret
+      # use static node list for cluster discovery
+      - EMQX_CLUSTER__DISCOVERY=static
+      # list of all cluster nodes; hostnames / container name
+      - EMQX_CLUSTER__STATIC__SEEDS=emqx1@emqx1,emqx2@emqx2,emqx3@emqx3,emqx4@emqx4,emqx5@emqx5
+      # listen for MQTT TCP external at port 1883
+      - EMQX_LISTENER__TCP__EXTERNAL=1883
+      # listen for MQTT WS on port 8083
+      - EMQX_LISTENER__WS__EXTERNAL=8083
+    volumes:
+      # persist emqx data
+      - emqx1-data:/opt/emqx/data
+    networks:
+      - emqx-net
+
+  emqx2:
+    image: emqx/emqx:5.6.0
+    container_name: emqx2
+    hostname: emqx2
+    environment:
+      - EMQX_NAME=emqx2
+      - EMQX_NODE__COOKIE=emqxsecret
+      - EMQX_CLUSTER__DISCOVERY=static
+      - EMQX_CLUSTER__STATIC__SEEDS=emqx1@emqx1,emqx2@emqx2,emqx3@emqx3,emqx4@emqx4,emqx5@emqx5
+      - EMQX_LISTENER__TCP__EXTERNAL=1883
+      - EMQX_LISTENER__WS__EXTERNAL=8083
+    volumes:
+      - emqx2-data:/opt/emqx/data
+    networks:
+      - emqx-net
+
+  emqx3:
+    image: emqx/emqx:5.6.0
+    container_name: emqx3
+    hostname: emqx3
+    environment:
+      - EMQX_NAME=emqx3
+      - EMQX_NODE__COOKIE=emqxsecret
+      - EMQX_CLUSTER__DISCOVERY=static
+      - EMQX_CLUSTER__STATIC__SEEDS=emqx1@emqx1,emqx2@emqx2,emqx3@emqx3,emqx4@emqx4,emqx5@emqx5
+      - EMQX_LISTENER__TCP__EXTERNAL=1883
+      - EMQX_LISTENER__WS__EXTERNAL=8083
+    volumes:
+      - emqx3-data:/opt/emqx/data
+    networks:
+      - emqx-net
+
+  emqx4:
+    image: emqx/emqx:5.6.0
+    container_name: emqx4
+    hostname: emqx4
+    environment:
+      - EMQX_NAME=emqx4
+      - EMQX_NODE__COOKIE=emqxsecret
+      - EMQX_CLUSTER__DISCOVERY=static
+      - EMQX_CLUSTER__STATIC__SEEDS=emqx1@emqx1,emqx2@emqx2,emqx3@emqx3,emqx4@emqx4,emqx5@emqx5
+      - EMQX_LISTENER__TCP__EXTERNAL=1883
+      - EMQX_LISTENER__WS__EXTERNAL=8083
+    volumes:
+      - emqx4-data:/opt/emqx/data
+    networks:
+      - emqx-net
+
+  emqx5:
+    image: emqx/emqx:5.6.0
+    container_name: emqx5
+    hostname: emqx5
+    environment:
+      - EMQX_NAME=emqx5
+      - EMQX_NODE__COOKIE=emqxsecret
+      - EMQX_CLUSTER__DISCOVERY=static
+      - EMQX_CLUSTER__STATIC__SEEDS=emqx1@emqx1,emqx2@emqx2,emqx3@emqx3,emqx4@emqx4,emqx5@emqx5
+      - EMQX_LISTENER__TCP__EXTERNAL=1883
+      - EMQX_LISTENER__WS__EXTERNAL=8083
+    volumes:
+      - emqx5-data:/opt/emqx/data
+    networks:
+      - emqx-net
+
+  haproxy:
+    image: haproxy:2.9
+    container_name: emqx-haproxy
+    volumes:
+      # mount local cfg into container
+      - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    # start only after all emqx nodes start up
+    depends_on:
+      - emqx1
+      - emqx2
+      - emqx3
+      - emqx4
+      - emqx5
+    networks:
+      - emqx-net
+      - client-net
+
+  mqtt-client:
+    image: eclipse-mosquitto:2.0
+    container_name: emqx-mqtt-client
+    # start with a shell to exec for testing
+    entrypoint: ["/bin/sh"]
+    # allocate a pseudo terminal
+    tty: true
+    networks:
+      - client-net
+
+volumes:
+  # persistent data for each emqx node
+  emqx1-data:
+  emqx2-data:
+  emqx3-data:
+  emqx4-data:
+  emqx5-data:
+
+networks:
+  # broker network
+  emqx-net:
+    name: emqx-net
+    driver: bridge
+  # client network
+  client-net:
+    name: client-net
+    driver: bridge
